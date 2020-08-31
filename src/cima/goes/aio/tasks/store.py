@@ -12,13 +12,13 @@ class Store(object):
         self.connection = None
         self._open_database()
 
-    def add(self, name: str):
-        sql = f"""INSERT INTO task(name, status, begin)
-            VALUES('{name}', 'PENDING', '{datetime.datetime.now().isoformat}')
+    def add(self, name: str, detail=''):
+        sql = f"""INSERT INTO task(name, status, detail, begin)
+            VALUES('{name}', 'PENDING', '{detail}', '{datetime.datetime.now().isoformat}')
         """
         self.cursor.execute(sql)
 
-    def take(self):
+    def take(self, detail=''):
         with self.connection:
             cursor = self.connection.cursor()
             select_sql = """select name from task where status = 'PENDING' limit 1;"""
@@ -27,11 +27,11 @@ class Store(object):
             if not rows:
                 return None
             name = rows[0][0]
-            update_sql = f"""update task set status = 'TAKED', begin = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+            update_sql = f"""update task set status = 'TAKED', detail = '{detail}', begin = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
             cursor.execute(update_sql)
             return name
 
-    def processed(self, name):
+    def processed(self, name, detail=''):
         with self.connection:
             cursor = self.connection.cursor()
             select_sql = f"""select name from task where name = '{name}';"""
@@ -39,19 +39,37 @@ class Store(object):
             rows = cursor.fetchall()
             if not rows:
                 raise Exception(f"{name} does not exists")
-            update_sql = f"""update task set status = 'PROCESSED', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+            update_sql = f"""update task set status = 'PROCESSED', detail = '{detail}', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+            cursor.execute(update_sql)
+            return name
+
+    def cancelled(self, name, detail):
+        with self.connection:
+            cursor = self.connection.cursor()
+            select_sql = f"""select name from task where name = '{name}';"""
+            cursor.execute(select_sql)
+            rows = cursor.fetchall()
+            if not rows:
+                raise Exception(f"{name} does not exists")
+            update_sql = f"""update task set status = 'CANCELLED', detail = '{detail}'end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
             cursor.execute(update_sql)
             return name
 
     def get_status(self, name):
         with self.connection:
             cursor = self.connection.cursor()
-            select_sql = f"""select name, status, begin, end_process from task where name = '{name}';"""
+            select_sql = f"""select name, status, begin, end_process, detail from task where name = '{name}';"""
             cursor.execute(select_sql)
             rows = cursor.fetchall()
             if not rows:
                 raise Exception(f"{name} does not exists")
-            return {"name": rows[0][0], "status": rows[0][1], "begin": rows[0][2], "end_process": rows[0][3]}
+            return {
+                "name": rows[0][0],
+                "status": rows[0][1],
+                "begin": rows[0][2],
+                "end_process": rows[0][3],
+                "detail": rows[0][4]
+            }
 
     def initialize_database(self):
         if self.connection:
@@ -63,6 +81,7 @@ class Store(object):
         blobs_sql = """CREATE TABLE IF NOT EXISTS task (
                 name text  PRIMARY KEY,
                 status text NOT NULL,
+                detail text,
                 begin timestamp,
                 end_process timestamp
         );"""

@@ -52,8 +52,9 @@ def play_store():
         filename2 = store.take()
         print(filename2)
         store.processed(filename1)
+        print(store.get_status(filename1))
 
 
 if __name__ == "__main__":
-    #init_store()
+    init_store()
     play_store()
