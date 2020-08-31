@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Union, List
-from ..products import Product, Band
+from cima.goes.products import Product, Band
 
 from gcloud.aio.storage.blob import Blob
 
