@@ -37,6 +37,7 @@ def try_seq(blobs):
     download_blobs(blobs, on_success=on_success, on_error=on_error)
     print("--- %s seconds ---" % (time.time() - start_time))
 
+
 def init_store():
     blobs = get_blobs(ProductBand(Product.CMIPF, Band.CLEAN_LONGWAVE_WINDOW), 2019, 11, 12)
     with Store("test.db") as store:
@@ -46,10 +47,12 @@ def init_store():
 
 def play_store():
     with Store("test.db") as store:
-        filename = store.get()
-        print(filename)
-        filename = store.get()
-        print(filename)
+        filename1 = store.take()
+        print(filename1)
+        filename2 = store.take()
+        print(filename2)
+        store.processed(filename2)
+        store.processed(filename1)
 
 
 if __name__ == "__main__":

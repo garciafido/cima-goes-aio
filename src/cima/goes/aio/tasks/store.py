@@ -12,21 +12,46 @@ class Store(object):
         self.connection = None
         self._open_database()
 
-    def add(self, filename: str):
-        sql = f"""INSERT INTO filename(name, status, begin)
-            VALUES('{filename}', 'PENDING', '{datetime.datetime.now().isoformat}')
+    def add(self, name: str):
+        sql = f"""INSERT INTO task(name, status, begin)
+            VALUES('{name}', 'PENDING', '{datetime.datetime.now().isoformat}')
         """
         self.cursor.execute(sql)
 
-    def get(self):
+    def take(self):
         with self.connection:
             cursor = self.connection.cursor()
-            select_sql = """select name from filename where status = 'PENDING' limit 1;"""
+            select_sql = """select name from task where status = 'PENDING' limit 1;"""
             cursor.execute(select_sql)
-            filename = cursor.fetchall()[0][0]
-            update_sql = f"""update filename set status = 'TAKED' where name = '{filename}';"""
+            rows = cursor.fetchall()
+            if not rows:
+                return None
+            name = rows[0][0]
+            update_sql = f"""update task set status = 'TAKED', begin = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
             cursor.execute(update_sql)
-            return filename
+            return name
+
+    def processed(self, name):
+        with self.connection:
+            cursor = self.connection.cursor()
+            select_sql = f"""select name from task where name = '{name}';"""
+            cursor.execute(select_sql)
+            rows = cursor.fetchall()
+            if not rows:
+                raise Exception(f"{name} does not exists")
+            update_sql = f"""update task set status = 'PROCESSED', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+            cursor.execute(update_sql)
+            return name
+
+    def get_status(self, name):
+        with self.connection:
+            cursor = self.connection.cursor()
+            select_sql = """select name, status, begin, end_process from task where name = '{name}';"""
+            cursor.execute(select_sql)
+            rows = cursor.fetchall()
+            if not rows:
+                raise Exception(f"{name} does not exists")
+            return {"name": rows[0][0], "status": rows[0][1], "begin": rows[0][2], "end_process": rows[0][3]}
 
     def initialize_database(self):
         if self.connection:
@@ -35,13 +60,13 @@ class Store(object):
             os.remove(self.database_filepath)
         self.connection = apsw.Connection(self.database_filepath)
         self.cursor = self.connection.cursor()
-        blobs_sql = """CREATE TABLE IF NOT EXISTS filename (
+        blobs_sql = """CREATE TABLE IF NOT EXISTS task (
                 name text  PRIMARY KEY,
                 status text NOT NULL,
                 begin timestamp,
-                end timestamp
+                end_process timestamp
         );"""
-        index_sql = """CREATE INDEX IF NOT EXISTS by_status ON filename(status)"""
+        index_sql = """CREATE INDEX IF NOT EXISTS by_status ON task(status)"""
         self.cursor.execute(blobs_sql)
         self.cursor.execute(index_sql)
 
