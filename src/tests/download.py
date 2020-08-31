@@ -51,7 +51,6 @@ def play_store():
         print(filename1)
         filename2 = store.take()
         print(filename2)
-        store.processed(filename2)
         store.processed(filename1)
 
 
