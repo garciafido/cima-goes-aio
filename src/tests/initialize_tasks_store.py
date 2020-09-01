@@ -15,7 +15,7 @@ def init_store():
                       datetime.date(year=2019, month=11, day=12))
     with Store(DATABASE_FILEPATH) as store:
         for blob in blobs:
-            store.add(blob.media_link)
+            store.add(blob.name)
 
 
 def main():

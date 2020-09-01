@@ -20,7 +20,7 @@ class Store(object):
         self.database_filepath = database_filepath
         self.connection = None
         self._open_database()
-        print('init database')
+        #print('init database')
 
     def add(self, name: str, detail=''):
         add_sql = f"""INSERT INTO task(name, status, detail, begin)
