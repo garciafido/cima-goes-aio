@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+
 import netCDF4
 import aiohttp
 from typing import List, Callable, Awaitable
@@ -6,7 +8,7 @@ from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 from google.cloud.storage import Blob
 from cima.goes.products import GOES_PUBLIC_BUCKET, path_prefix, file_regex_pattern, ANY_MODE
-from cima.goes.products import ProductBand, day_path_prefix, get_gcs_url
+from cima.goes.products import ProductBand
 
 
 MAX_CONCURRENT = 10
@@ -45,13 +47,10 @@ async def download_datasets(urls: List[str],
         await asyncio.gather(*tasks)
 
 
-def get_blobs(product_band: ProductBand, year: int, month: int, day: int, hour: int=None) -> List[Blob]:
+def get_blobs(product_band: ProductBand, date: datetime.date, hour: int=None) -> List[Blob]:
     client = storage.Client(project="<none>", credentials=AnonymousCredentials())
     bucket = client.get_bucket(GOES_PUBLIC_BUCKET)
-    if hour is None:
-        prefix = day_path_prefix(year=year, month=month, day=day, product=product_band.product)
-    else:
-        prefix = path_prefix(year=year, month=month, day=day, hour=hour, product=product_band.product)
+    prefix = path_prefix(product=product_band.product, year=date.year, month=date.month, day=date.day, hour=hour)
     pattern = file_regex_pattern(
         band=product_band.band, product=product_band.product, mode=ANY_MODE,
         subproduct=product_band.subproduct)

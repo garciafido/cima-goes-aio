@@ -1,11 +1,15 @@
 import multiprocessing
 import os
 import datetime
+from typing import Callable, List, Awaitable
+
 import apsw
 import six
+import uvloop
 
 from .singleton import SingletonType
-
+from .commands import Command, BreakCommand
+from aiomultiprocess import Pool
 
 _store_lock = multiprocessing.Lock()
 
@@ -39,7 +43,7 @@ class Store(object):
                 cursor.execute(update_sql)
                 return name
 
-    def processed(self, name, detail=''):
+    def _processed(self, name, detail=''):
         select_sql = f"""select name from task where name = '{name}';"""
         update_sql = f"""update task set status = 'PROCESSED', detail = '{detail}', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
         with _store_lock:
@@ -52,7 +56,7 @@ class Store(object):
                 cursor.execute(update_sql)
                 return name
 
-    def cancelled(self, name, detail):
+    def _cancelled(self, name, detail):
         select_sql = f"""select name from task where name = '{name}';"""
         update_sql = f"""update task set status = 'CANCELLED', detail = '{detail}'end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
         with _store_lock:
@@ -120,3 +124,57 @@ class Store(object):
 
     def __exit__(self, *args, **kwargs):
         pass
+
+    async def process(self, process_taks: Callable[[List[str]], Awaitable[None]], pool_size: int):
+        queue = self._run_queue()
+        files_pools = self._get_pools(pool_size, queue)
+        print([len(x[0]) for x in files_pools])
+
+        async with Pool(loop_initializer=uvloop.new_event_loop) as pool:
+            await pool.starmap(process_taks, files_pools)
+        queue.put(BreakCommand())
+
+    def put(self, command: Command):
+        if isinstance(command, Processed):
+            self._processed(*command._args, **command._kwargs)
+            print(command._args[0])
+        elif isinstance(command, Cancelled):
+            self._cancelled(*command._args, **command._kwargs)
+
+    def _run_queue(self) -> multiprocessing.Queue:
+        m = multiprocessing.Manager()
+        queue = m.Queue()
+        p = multiprocessing.Process(target=self._worker, args=(queue, self.database_filepath))
+        p.start()
+        return queue
+
+    def _get_pools(self, files_per_pool: int, queue: multiprocessing.Queue):
+        pools = []
+        for _ in range(multiprocessing.cpu_count()):
+            pool = []
+            pools.append((pool, queue))
+            for _ in range(files_per_pool):
+                url = self.take()
+                if url is None:
+                    return pools
+                pool.append(url)
+        return pools
+
+    @staticmethod
+    def _worker(queue: multiprocessing.Queue, database_filepath: str):
+        with Store(database_filepath) as store:
+            while True:
+                command = queue.get()
+                if isinstance(command, BreakCommand):
+                    break
+                store.put(command)
+
+
+class Processed(Command):
+    pass
+
+
+class Cancelled(Command):
+    pass
+
+

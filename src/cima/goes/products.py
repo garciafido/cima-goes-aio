@@ -103,18 +103,12 @@ def get_day_of_year(year, month, day):
     return datetime.datetime(year=year, month=month, day=day).timetuple().tm_yday
 
 
-def path_prefix(year: int, month: int, day: int, hour: int, product=Product.CMIPF):
+def path_prefix(product: Product, year: int, month: int, day: int, hour: int=None):
     day_of_year = get_day_of_year(year, month, day)
-    return f'{product.value}/{year:04d}/{day_of_year:03d}/{hour:02d}/'
-
-
-def day_path_prefix(year: int, month: int, day: int, product=Product.CMIPF):
-    day_of_year = get_day_of_year(year, month, day)
-    return f'{product.value}/{year:04d}/{day_of_year:03d}/'
-
-
-def year_path_prefix(year: int, product=Product.CMIPF):
-    return f'{product.value}/{year:04d}/'
+    if hour is None:
+        return f'{product.value}/{year:04d}/{day_of_year:03d}/'
+    else:
+        return f'{product.value}/{year:04d}/{day_of_year:03d}/{hour:02d}/'
 
 
 def file_name(band: Band, product=Product.CMIPF, mode=ANY_MODE, subproduct: int = None):
