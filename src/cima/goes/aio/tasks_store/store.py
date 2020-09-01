@@ -137,7 +137,6 @@ class Store(object):
     def put(self, command: Command):
         if isinstance(command, Processed):
             self._processed(*command._args, **command._kwargs)
-            print(command._args[0])
         elif isinstance(command, Cancelled):
             self._cancelled(*command._args, **command._kwargs)
 

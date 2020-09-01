@@ -1,33 +1,25 @@
 import asyncio
-import datetime
 import multiprocessing
 import os
 import time
 from typing import List
-
-from cima.goes.products import ProductBand, Product, Band
 from cima.goes.aio.gcs import Dataset
-from cima.goes.aio.gcs import get_blobs, download_datasets
-from cima.goes.aio.tasks import Store, Processed, Cancelled
+from cima.goes.aio.gcs import download_datasets
+from cima.goes.aio.tasks_store import Store, Processed, Cancelled
+from cima.goes.products import filename_from_media_link
 
 
 DATABASE_FILEPATH = "test.db"
 
 
-async def on_error(filename: str, e: Exception, queue: multiprocessing.Queue):
-    queue.put(Cancelled(filename, str(e)))
+async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
+    queue.put(Cancelled(task_name, str(e)))
 
 
-async def on_success(filename: str, dataset: Dataset, queue: multiprocessing.Queue):
-    queue.put(Processed(filename))
-
-
-def init_store():
-    blobs = get_blobs(ProductBand(Product.CMIPF, Band.CLEAN_LONGWAVE_WINDOW),
-                      datetime.date(year=2019, month=11, day=12))
-    with Store(DATABASE_FILEPATH) as store:
-        for blob in blobs:
-            store.add(blob.media_link)
+async def on_success(task_name: str, dataset: Dataset, queue: multiprocessing.Queue):
+    filename = filename_from_media_link(task_name)
+    print(filename)
+    queue.put(Processed(task_name))
 
 
 async def process_taks(names: List[str], queue):
@@ -40,12 +32,9 @@ async def process_taks(names: List[str], queue):
 async def main():
     store = Store(DATABASE_FILEPATH)
     start_time = time.time()
-    await store.process(process_taks, 34)
+    await store.process(process_taks, 2)
     print("async --- %s seconds ---" % (time.time() - start_time))
 
 
 if __name__ == "__main__":
-    if os.path.exists(DATABASE_FILEPATH):
-        os.remove(DATABASE_FILEPATH)
-    init_store()
     asyncio.run(main())

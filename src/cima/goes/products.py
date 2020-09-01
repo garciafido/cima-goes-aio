@@ -1,4 +1,6 @@
 import datetime
+import os
+import urllib
 from dataclasses import dataclass
 from enum import IntEnum, Enum, unique
 import re
@@ -115,6 +117,10 @@ def file_name(band: Band, product=Product.CMIPF, mode=ANY_MODE, subproduct: int 
     subp = subproduct if subproduct is not None else ''
     band_str = f'C{band:02d}' if band is not None else ''
     return f'{OR}_{product.value}{subp}-{mode}{band_str}_{G16}'
+
+
+def filename_from_media_link(media_link: str):
+    return urllib.parse.unquote(os.path.basename(os.path.normpath(media_link)).split('?')[0])
 
 
 def hour_file_name(hour: int, band: Band, product=Product.CMIPF, mode=ANY_MODE, subproduct: int = None):
