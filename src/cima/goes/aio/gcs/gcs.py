@@ -1,5 +1,4 @@
 import asyncio
-import io
 import netCDF4
 import aiohttp
 from typing import List, Callable, Awaitable
@@ -7,69 +6,42 @@ from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 from google.cloud.storage import Blob
 from cima.goes.products import GOES_PUBLIC_BUCKET, path_prefix, file_regex_pattern, ANY_MODE
-from cima.goes.products import ProductBand, day_path_prefix
+from cima.goes.products import ProductBand, day_path_prefix, get_gcs_url
+
 
 MAX_CONCURRENT = 10
 
 
-def download_from_blob(blob):
-    in_memory_file = io.BytesIO()
-    blob.download_to_file(in_memory_file)
-    in_memory_file.seek(0)
-    return in_memory_file.read()
-
-
-async def download_aio(url: str,
-                       session: aiohttp.ClientSession=None,
-                       semaphore: asyncio.Semaphore=None) -> bytes:
+async def download(url: str,
+                   session: aiohttp.ClientSession=None,
+                   semaphore: asyncio.Semaphore=None) -> bytes:
     async with semaphore:
         async with session.get(url) as resp:
             return await resp.read()
 
 
-async def download_from_blob_aio(blob: Blob,
-                                 session: aiohttp.ClientSession=None,
-                                 semaphore: asyncio.Semaphore=None) -> bytes:
-    return await download_aio(blob.media_link, session=session, semaphore=semaphore)
-
-
-def get_dataset(blob: Blob) -> netCDF4.Dataset:
-    data = download_from_blob(blob)
-    return netCDF4.Dataset("in_memory_file", mode='r', memory=data)
-
-
-async def get_dataset_aio(blob: Blob,
+async def get_dataset(url: str,
                           session: aiohttp.ClientSession=None,
                           semaphore: asyncio.Semaphore=None) -> netCDF4.Dataset:
-    data = await download_from_blob_aio(blob, session, semaphore=semaphore)
+    data = await download(url, session, semaphore=semaphore)
     return netCDF4.Dataset("in_memory_file", mode='r', memory=data)
 
 
-def download_blobs(blobs: List[Blob],
-                   on_success: Callable[[Blob, netCDF4.Dataset], None],
-                   on_error: Callable[[Blob, Exception], None]):
-    for blob in blobs:
+async def download_datasets(urls: List[str],
+                            on_success: Callable[[str, netCDF4.Dataset], Awaitable[None]],
+                            on_error: Callable[[str, Exception], Awaitable[None]]):
+    async def process(url, session, semaphore):
         try:
-            on_success(blob, get_dataset(blob))
+            dataset = await get_dataset(url, session=session, semaphore=semaphore)
+            await on_success(url, dataset)
         except Exception as e:
-            on_error(blob, e)
-
-
-async def download_blobs_aio(blobs: List[Blob],
-                             on_success: Callable[[Blob, netCDF4.Dataset], Awaitable[None]],
-                             on_error: Callable[[Blob, Exception], Awaitable[None]]):
-    async def process(blob, session, semaphore):
-        try:
-            dataset = await get_dataset_aio(blob, session=session, semaphore=semaphore)
-            await on_success(blob, dataset)
-        except Exception as e:
-            await on_error(blob, e)
+            await on_error(url, e)
 
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
     tasks = []
     async with aiohttp.ClientSession() as session:
-        for blob in blobs:
-            tasks.append(process(blob, session, semaphore))
+        for url in urls:
+            tasks.append(process(url, session, semaphore))
         await asyncio.gather(*tasks)
 
 
