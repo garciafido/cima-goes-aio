@@ -115,7 +115,7 @@ def write_clipping_info_to_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     dataset.createDimension('cropped_x', x_dim)
 
     # create latitude axis
-    new_lats = dataset.createVariable('lats', dscd.lats.dtype, ('cropped_y', 'cropped_x'))
+    new_lats = dataset.createVariable('lats', dscd.lats.dtype, ('cropped_y', 'cropped_x'), zlib=True)
     new_lats.standard_name = 'latitude'
     new_lats.long_name = 'latitude'
     new_lats.units = 'degrees_north'
@@ -123,7 +123,7 @@ def write_clipping_info_to_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_lats[:,:] = dscd.lats
 
     # create longitude axis
-    new_lons = dataset.createVariable('lons', dscd.lons.dtype, ('cropped_y', 'cropped_x'))
+    new_lons = dataset.createVariable('lons', dscd.lons.dtype, ('cropped_y', 'cropped_x'), zlib=True)
     new_lons.standard_name = 'longitude'
     new_lons.long_name = 'longitude'
     new_lons.units = 'degrees_east'
@@ -131,7 +131,7 @@ def write_clipping_info_to_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_lons[:,:] = dscd.lons
 
     # create x
-    new_x = dataset.createVariable('x', dscd.x.dtype, ('cropped_x',))
+    new_x = dataset.createVariable('x', dscd.x.dtype, ('cropped_x',), zlib=True)
     new_x.standard_name = 'projection_x_coordinate'
     new_x.long_name = 'GOES fixed grid projection x-coordinate'
     new_x.comments = 'Vector x of the cropping area'
@@ -140,7 +140,7 @@ def write_clipping_info_to_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_x[:] = dscd.x
 
     # create y
-    new_y = dataset.createVariable('y', dscd.y.dtype, ('cropped_y',))
+    new_y = dataset.createVariable('y', dscd.y.dtype, ('cropped_y',), zlib=True)
     new_y.standard_name = 'projection_y_coordinate'
     new_y.long_name = 'GOES fixed grid projection y-coordinate'
     new_y.comments = 'Vector y of the cropping area'
