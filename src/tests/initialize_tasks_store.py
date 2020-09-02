@@ -11,11 +11,24 @@ DATABASE_FILEPATH = "test.db"
 
 
 def init_store():
-    blobs = get_blobs(ProductBand(Product.CMIPF, Band.CLEAN_LONGWAVE_WINDOW),
-                      datetime.date(year=2019, month=11, day=12))
+    date=datetime.date(2017, 7, 11)
+    to_date1=datetime.date(2017, 11, 30)
+    from_date2=datetime.date(2017, 12, 15)
+    to_date2=datetime.date.today()
+    range = 1
     with Store(DATABASE_FILEPATH) as store:
-        for blob in blobs:
-            store.add(blob.name)
+        while True:
+            if range == 1 and date > to_date1:
+                date = from_date2
+                range = 2
+                print("---------------  RANGE 2 --------------")
+            elif range == 2 and date > to_date2:
+                break
+            blobs = get_blobs(ProductBand(Product.CMIPF, Band.CLEAN_LONGWAVE_WINDOW), date)
+            for blob in blobs:
+                store.add(blob.name)
+            print(date.isoformat())
+            date = date + datetime.timedelta(days=1)
 
 
 def main():

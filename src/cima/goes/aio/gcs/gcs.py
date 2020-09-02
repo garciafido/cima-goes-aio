@@ -1,12 +1,13 @@
 import asyncio
 import datetime
+import io
 
 import netCDF4
 import aiohttp
 from typing import List, Callable, Awaitable
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
-from google.cloud.storage import Blob, Bucket
+from google.cloud.storage import Blob
 from cima.goes.products import GOES_PUBLIC_BUCKET, path_prefix, file_regex_pattern, ANY_MODE
 from cima.goes.products import ProductBand
 
@@ -20,6 +21,13 @@ async def download(url: str,
     async with semaphore:
         async with session.get(url) as resp:
             return await resp.read()
+
+
+def get_blob_dataset(blob: Blob) -> netCDF4.Dataset:
+    in_memory_file = io.BytesIO()
+    blob.download_to_file(in_memory_file)
+    in_memory_file.seek(0)
+    return netCDF4.Dataset("in_memory_file", mode='r', memory=in_memory_file.read())
 
 
 async def get_dataset(url: str,
