@@ -5,6 +5,7 @@ from typing import List
 from cima.goes.aio.gcs import Dataset
 from cima.goes.aio.gcs import download_datasets
 from cima.goes.aio.tasks_store import Store, Processed, Cancelled
+from generate_one_file import save_SA_netcdf
 
 
 DATABASE_FILEPATH = "test.db"
@@ -16,7 +17,7 @@ async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
 
 async def on_success(task_name: str, dataset: Dataset, queue: multiprocessing.Queue):
     print(task_name)
-    save_
+    await save_SA_netcdf(dataset)
     queue.put(Processed(task_name))
 
 
@@ -30,7 +31,7 @@ async def process_taks(names: List[str], queue):
 async def main():
     store = Store(DATABASE_FILEPATH)
     start_time = time.time()
-    await store.process(process_taks, 17)
+    await store.process(process_taks, 35)
     print("async --- %s seconds ---" % (time.time() - start_time))
 
 
