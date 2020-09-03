@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import os
 from typing import Dict, Union
 
 import netCDF4
@@ -16,9 +17,11 @@ def write_institutional_info_to_dataset(dataset: netCDF4.Dataset):
     dataset.creator_email = "jruiz@cima.fcen.uba.ar, salio@cima.fcen.uba.ar"
 
 
-async def save_SA_netcdf(source_dataset: netCDF4.Dataset):
+async def save_SA_netcdf(source_dataset: netCDF4.Dataset, path="./"):
     clipping_info: DatasetClippingInfo = await get_clipping_info(get_sat_lon(source_dataset))
-    filename = f"SA-{source_dataset.dataset_name}"
+    filename = f"{path}SA-{source_dataset.dataset_name}"
+    if not os.path.exists(path):
+        os.makedirs(path)
     clipped_dataset = netCDF4.Dataset(filename, 'w', format='NETCDF4')
     try:
         clipped_dataset.dataset_name = filename
