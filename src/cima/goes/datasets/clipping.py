@@ -1,8 +1,13 @@
+import datetime
+from typing import List, Dict
+
 import netCDF4
 import pyproj
 import numpy as np
 from dataclasses import dataclass
 
+from cima.goes.aio.gcs import get_blobs, get_blob_dataset
+from cima.goes.products import ProductBand
 
 old_sat_lon = -89.5
 actual_sat_lon = -75.2
@@ -19,10 +24,10 @@ class LatLonRegion:
 
 @dataclass
 class RegionIndexes:
-    x_min: int = None
-    x_max: int = None
-    y_min: int = None
-    y_max: int = None
+    col_min: int = None
+    col_max: int = None
+    row_min: int = None
+    row_max: int = None
 
 
 @dataclass
@@ -39,32 +44,78 @@ class DatasetClippingInfo:
     y: any
 
 
-def copy_variable(variable, dest_dataset):
-    if not variable.name in dest_dataset.variables:
-        dest_dataset.createVariable(variable.name, variable.datatype, variable.dimensions)
-    dest_dataset[variable.name][:] = variable[:]
-    dest_dataset[variable.name].setncatts(variable.__dict__)
+clipping_info_dict = Dict[float, DatasetClippingInfo]
 
 
-def nearest_indexes(lat, lon, lats, lons, major_order):
-    distance = (lat - lats) * (lat - lats) + (lon - lons) * (lon - lons)
-    return np.unravel_index(np.argmin(distance), lats.shape, major_order)
+def generate_info_files(product_bands: List[ProductBand],
+                        latLonRegion: LatLonRegion,
+                        filename_prefix="./",
+                        institution="Center for Oceanic and Atmospheric Research(CIMA), University of Buenos Aires (UBA) > ARGENTINA",
+                        creator_name="Juan Ruiz and Paola Salio",
+                        creator_email="jruiz@cima.fcen.uba.ar, salio@cima.fcen.uba.ar") -> None:
+    for product_band in product_bands:
+        all_clipping_info = _generate_clipping_info(product_band, latLonRegion)
+        for sat_lon, clipping_info in all_clipping_info.items():
+            filename = _get_region_data_filename(filename_prefix, product_band, clipping_info, sat_lon)
+            info_dataset = netCDF4.Dataset(filename, 'w', format='NETCDF4')
+            try:
+                info_dataset.dataset_name = filename
+                write_clipping_to_info_dataset(info_dataset, clipping_info)
+                info_dataset.institution = institution
+                info_dataset.creator_name = creator_name
+                info_dataset.creator_email = creator_email
+            finally:
+                info_dataset.close()
 
 
-def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes:
-    x1, y1 = nearest_indexes(region.lat_north, region.lon_west, lats, lons, major_order)
-    x2, y2 = nearest_indexes(region.lat_north, region.lon_east, lats, lons, major_order)
-    x3, y3 = nearest_indexes(region.lat_south, region.lon_west, lats, lons, major_order)
-    x4, y4 = nearest_indexes(region.lat_south, region.lon_east, lats, lons, major_order)
-
-    indexes = RegionIndexes()
-    indexes.x_min = int(min(x1, x2, x3, x4))
-    indexes.x_max = int(max(x1, x2, x3, x4))
-    indexes.y_min = int(min(y1, y2, y3, y4))
-    indexes.y_max = int(max(y1, y2, y3, y4))
-    return indexes
+def _get_region_data_filename(filename_prefix, product_band: ProductBand, clipping_info: DatasetClippingInfo, sat_lon: float):
+    resolution = clipping_info.spatial_resolution.split(" ")[0]
+    return f'{filename_prefix}{product_band.product.name}-{resolution}-{str(int(sat_lon)).replace("-", "").replace(".", "_")}W.nc'
 
 
+def _generate_clipping_info(product_band: ProductBand, latLonRegion: LatLonRegion) -> clipping_info_dict:
+    clipping_info: clipping_info_dict = {old_sat_lon: None, actual_sat_lon: None}
+
+    blob = get_blobs(product_band, datetime.date(year=2017, month=8, day=1), hour=15)[0]
+    dataset = get_blob_dataset(blob)
+    clipping_info[old_sat_lon] = get_clipping_info_from_dataset(dataset, latLonRegion)
+
+    blob = get_blobs(product_band, datetime.date(year=2019, month=6, day=1), hour=15)[0]
+    dataset = get_blob_dataset(blob)
+    clipping_info[actual_sat_lon] = get_clipping_info_from_dataset(dataset, latLonRegion)
+
+    return clipping_info
+
+
+def get_clipping_info_from_info_dataset(info_dataset: netCDF4.Dataset):
+    latLonRegion = LatLonRegion(
+        lat_north=info_dataset.geospatial_lat_max,
+        lat_south=info_dataset.geospatial_lat_min,
+        lon_west=info_dataset.geospatial_lon_min,
+        lon_east=info_dataset.geospatial_lon_max,
+    )
+
+    indexes = RegionIndexes(
+        col_min=info_dataset.col_min,
+        col_max=info_dataset.col_max,
+        row_min=info_dataset.row_min,
+        row_max=info_dataset.row_max
+    )
+
+    return DatasetClippingInfo(
+        goes_imager_projection=info_dataset.variables['goes_imager_projection'],
+        spatial_resolution=info_dataset.spatial_resolution,
+        orbital_slot=info_dataset.orbital_slot,
+        instrument_type=info_dataset.instrument_type,
+        region=latLonRegion,
+        indexes=indexes,
+        lats=info_dataset.variables['lats'][:,:],
+        lons=info_dataset.variables['lats'][:,:],
+        x=info_dataset.variables['x'][:],
+        y=info_dataset.variables['y'][:]
+    )
+    
+    
 def get_clipping_info_from_dataset(dataset: netCDF4.Dataset, region: LatLonRegion) -> DatasetClippingInfo:
     lats, lons, x, y = get_lats_lons_x_y(dataset)
     indexes = find_indexes(region, lats, lons, default_major_order)
@@ -75,10 +126,10 @@ def get_clipping_info_from_dataset(dataset: netCDF4.Dataset, region: LatLonRegio
         instrument_type=dataset.instrument_type,
         region=region,
         indexes=indexes,
-        lats=lats[indexes.y_min: indexes.y_max, indexes.x_min: indexes.x_max],
-        lons=lons[indexes.y_min: indexes.y_max, indexes.x_min: indexes.x_max],
-        x=x[indexes.x_min: indexes.x_max],
-        y=x[indexes.y_min: indexes.y_max]
+        lats=lats[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max],
+        lons=lons[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max],
+        x=x[indexes.col_min: indexes.col_max],
+        y=x[indexes.row_min: indexes.row_max]
     )
 
 
@@ -88,18 +139,23 @@ def get_spatial_resolution(dataset: netCDF4.Dataset) -> float:
 
 def _write_clipping_to_any_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippingInfo):
     copy_variable(dscd.goes_imager_projection, dataset)
-    dataset.col_min = np.short(dscd.indexes.x_min)
-    dataset.col_max = np.short(dscd.indexes.x_max)
-    dataset.row_min = np.short(dscd.indexes.y_min)
-    dataset.row_max = np.short(dscd.indexes.y_max)
+    dataset.col_min = np.short(dscd.indexes.col_min)
+    dataset.col_max = np.short(dscd.indexes.col_max)
+    dataset.row_min = np.short(dscd.indexes.row_min)
+    dataset.row_max = np.short(dscd.indexes.row_max)
+
+    dataset.geospatial_lat_min = dscd.region.lat_south
+    dataset.geospatial_lat_max = dscd.region.lat_north
+    dataset.geospatial_lon_min = dscd.region.lon_west
+    dataset.geospatial_lon_max = dscd.region.lon_east
 
     dataset.spatial_resolution = dscd.spatial_resolution
     dataset.orbital_slot = dscd.orbital_slot
     dataset.instrument_type = dscd.instrument_type
 
     # create dimensios
-    y_dim = dscd.indexes.y_max-dscd.indexes.y_min
-    x_dim = dscd.indexes.x_max-dscd.indexes.x_min
+    y_dim = dscd.indexes.row_max-dscd.indexes.row_min
+    x_dim = dscd.indexes.col_max - dscd.indexes.col_min
     dataset.createDimension('cropped_y', y_dim)
     dataset.createDimension('cropped_x', x_dim)
 
@@ -168,9 +224,9 @@ def fill_clipped_variable_from_source(clipped_dataset: netCDF4.Dataset,
                                       source_dataset: netCDF4.Dataset,
                                       comments: str,
                                       variable_name: str="CMI"):
-    source_cmi = source_dataset.variables[variable_name]
-    cmi = clipped_dataset.createVariable(variable_name, source_cmi.datatype, ('cropped_y', 'cropped_x'))
-    cmi_attr = {k: source_cmi.getncattr(k) for k in source_cmi.ncattrs() if k[0] != '_'}
+    source_variable = source_dataset.variables[variable_name]
+    cmi = clipped_dataset.createVariable(variable_name, source_variable.datatype, ('cropped_y', 'cropped_x'))
+    cmi_attr = {k: source_variable.getncattr(k) for k in source_variable.ncattrs() if k[0] != '_'}
     cmi_attr['comments'] = comments
     cmi.setncatts(cmi_attr)
 
@@ -178,9 +234,35 @@ def fill_clipped_variable_from_source(clipped_dataset: netCDF4.Dataset,
     clipped_dataset.time_coverage_end = source_dataset.time_coverage_end
     copy_variable(source_dataset.variables['goes_imager_projection'], clipped_dataset)
 
-    clipped_dataset.variables[variable_name][:, :] = source_cmi[
+    clipped_dataset.variables[variable_name][:, :] = source_variable[
                                              clipped_dataset.row_min:clipped_dataset.row_max,
                                              clipped_dataset.col_min:clipped_dataset.col_max]
+
+
+def copy_variable(variable, dest_dataset):
+    if not variable.name in dest_dataset.variables:
+        dest_dataset.createVariable(variable.name, variable.datatype, variable.dimensions)
+    dest_dataset[variable.name][:] = variable[:]
+    dest_dataset[variable.name].setncatts(variable.__dict__)
+
+
+def nearest_indexes(lat, lon, lats, lons, major_order):
+    distance = (lat - lats) * (lat - lats) + (lon - lons) * (lon - lons)
+    return np.unravel_index(np.argmin(distance), lats.shape, major_order)
+
+
+def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes:
+    x1, y1 = nearest_indexes(region.lat_north, region.lon_west, lats, lons, major_order)
+    x2, y2 = nearest_indexes(region.lat_north, region.lon_east, lats, lons, major_order)
+    x3, y3 = nearest_indexes(region.lat_south, region.lon_west, lats, lons, major_order)
+    x4, y4 = nearest_indexes(region.lat_south, region.lon_east, lats, lons, major_order)
+
+    indexes = RegionIndexes()
+    indexes.col_min = int(min(x1, x2, x3, x4))
+    indexes.col_max = int(max(x1, x2, x3, x4))
+    indexes.row_min = int(min(y1, y2, y3, y4))
+    indexes.row_max = int(max(y1, y2, y3, y4))
+    return indexes
 
 
 def get_lats_lons_x_y(dataset, indexes: RegionIndexes = None):
@@ -192,8 +274,8 @@ def get_lats_lons_x_y(dataset, indexes: RegionIndexes = None):
         source_x = dataset['x'][:]
         source_y = dataset['y'][:]
     else:
-        source_x = dataset['x'][indexes.x_min: indexes.x_max]
-        source_y = dataset['y'][indexes.y_min: indexes.y_max]
+        source_x = dataset['x'][indexes.col_min: indexes.col_max]
+        source_y = dataset['y'][indexes.row_min: indexes.row_max]
     x = source_x * sat_height
     y = source_y * sat_height
     XX, YY = np.meshgrid(np.array(x), np.array(y))
