@@ -73,6 +73,11 @@ def _get_region_data_filename(filename_prefix, product_band: ProductBand, clippi
     return f'{filename_prefix}{product_band.product.name}-{resolution}-{str(int(sat_lon)).replace("-", "").replace(".", "_")}W.nc'
 
 
+def get_sat_lon(dataset: netCDF4.Dataset):
+    imager_projection = dataset.variables['goes_imager_projection']
+    return imager_projection.longitude_of_projection_origin
+
+
 def _generate_clipping_info(product_band: ProductBand, latLonRegion: LatLonRegion) -> clipping_info_dict:
     clipping_info: clipping_info_dict = {old_sat_lon: None, actual_sat_lon: None}
 

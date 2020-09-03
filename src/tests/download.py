@@ -16,6 +16,7 @@ async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
 
 async def on_success(task_name: str, dataset: Dataset, queue: multiprocessing.Queue):
     print(task_name)
+    save_
     queue.put(Processed(task_name))
 
 

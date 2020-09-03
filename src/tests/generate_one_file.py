@@ -1,8 +1,12 @@
+import asyncio
 import datetime
+from typing import Dict, Union
+
 import netCDF4
 from cima.goes.aio.gcs import get_blobs, get_blob_dataset
 from cima.goes.datasets import write_clipping_to_dataset, DatasetClippingInfo
-from cima.goes.datasets.clipping import fill_clipped_variable_from_source, get_clipping_info_from_info_dataset
+from cima.goes.datasets.clipping import fill_clipped_variable_from_source, get_clipping_info_from_info_dataset, \
+    old_sat_lon, actual_sat_lon, get_sat_lon
 from cima.goes.products import ProductBand, Product, Band
 
 
@@ -12,7 +16,8 @@ def write_institutional_info_to_dataset(dataset: netCDF4.Dataset):
     dataset.creator_email = "jruiz@cima.fcen.uba.ar, salio@cima.fcen.uba.ar"
 
 
-def save_SA_netcdf(source_dataset: netCDF4.Dataset, clipping_info: DatasetClippingInfo):
+async def save_SA_netcdf(source_dataset: netCDF4.Dataset):
+    clipping_info: DatasetClippingInfo = await get_clipping_info(get_sat_lon(source_dataset))
     filename = f"SA-{source_dataset.dataset_name}"
     clipped_dataset = netCDF4.Dataset(filename, 'w', format='NETCDF4')
     try:
@@ -30,15 +35,27 @@ def save_SA_netcdf(source_dataset: netCDF4.Dataset, clipping_info: DatasetClippi
         clipped_dataset.close()
 
 
-def run():
+SA_clipping_info: Dict[float, Union[None, DatasetClippingInfo]] = {
+    old_sat_lon: None,
+    actual_sat_lon: None,
+}
+
+
+async def get_clipping_info(sat_lon: float) -> DatasetClippingInfo:
+    clipping_info = SA_clipping_info[sat_lon]
+    if clipping_info is None:
+        info_dataset = netCDF4.Dataset(f'SA-CMIPF-2km-{-int(sat_lon)}W.nc')
+        SA_clipping_info[sat_lon] = get_clipping_info_from_info_dataset(info_dataset)
+    return SA_clipping_info[sat_lon]
+
+
+async def test_one():
     product_band = ProductBand(product=Product.CMIPF, band=Band.CLEAN_LONGWAVE_WINDOW)
     blob = get_blobs(product_band, datetime.date(year=2017, month=8, day=1), hour=15)[0]
     dataset = get_blob_dataset(blob)
-    info_dataset = netCDF4.Dataset('SA-CMIPF-2km-89W.nc')
-    clipping_info = get_clipping_info_from_info_dataset(info_dataset)
 
-    save_SA_netcdf(dataset, clipping_info)
+    await save_SA_netcdf(dataset)
 
 
 if __name__ == "__main__":
-    run()
+    asyncio.run(test_one())
