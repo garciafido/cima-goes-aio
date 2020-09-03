@@ -32,6 +32,10 @@ async def process_taks(names: List[str], queue):
 async def main():
     store = Store(DATABASE_FILEPATH)
     start_time = time.time()
+    print(store.get_stats())
+    store.free_taken()
+    store.free_cancelled()
+    print(store.get_stats())
     await store.process(process_taks, 1)
     print("async --- %s seconds ---" % (time.time() - start_time))
 

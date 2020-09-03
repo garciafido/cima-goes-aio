@@ -24,7 +24,7 @@ class Store(object):
 
     def add(self, name: str, detail=''):
         add_sql = f"""INSERT INTO task(name, status, detail, begin)
-            VALUES('{name}', 'PENDING', '{detail}', '{datetime.datetime.now().isoformat}')
+            VALUES('{name}', 'PENDING', '{detail.replace("'", '''"''')}', '{datetime.datetime.now().isoformat}')
         """
         with _store_lock:
             self.cursor.execute(add_sql)
@@ -39,13 +39,13 @@ class Store(object):
                 if not rows:
                     return None
                 name = rows[0][0]
-                update_sql = f"""update task set status = 'TAKED', detail = '{detail}', begin = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+                update_sql = f"""update task set status = 'TAKEN', detail = '{detail.replace("'", '''"''')}', begin = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
                 cursor.execute(update_sql)
                 return name
 
     def _processed(self, name, detail=''):
         select_sql = f"""select name from task where name = '{name}';"""
-        update_sql = f"""update task set status = 'PROCESSED', detail = '{detail}', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+        update_sql = f"""update task set status = 'PROCESSED', detail = '{detail.replace("'", '''"''')}', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
         with _store_lock:
             with self.connection:
                 cursor = self.connection.cursor()
@@ -58,7 +58,7 @@ class Store(object):
 
     def _cancelled(self, name, detail):
         select_sql = f"""select name from task where name = '{name}';"""
-        update_sql = f"""update task set status = 'CANCELLED', detail = '{detail}'end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
+        update_sql = f"""update task set status = 'CANCELLED', detail = '{detail.replace("'", '''"''')}', end_process = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
         with _store_lock:
             with self.connection:
                 cursor = self.connection.cursor()
@@ -66,6 +66,7 @@ class Store(object):
                 rows = cursor.fetchall()
                 if not rows:
                     raise Exception(f"{name} does not exists")
+                print(update_sql)
                 cursor.execute(update_sql)
                 return name
 
@@ -85,6 +86,28 @@ class Store(object):
                     "end_process": rows[0][3],
                     "detail": rows[0][4]
                 }
+
+    def get_stats(self):
+        select_sql = f"""select status, count(name) from task group by status;"""
+        with _store_lock:
+            with self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(select_sql)
+                return cursor.fetchall()
+
+    def free_taken(self):
+        update_sql = f"""update task set status = 'PENDING' where status = 'TAKEN';"""
+        with _store_lock:
+            with self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(update_sql)
+
+    def free_cancelled(self):
+        update_sql = f"""update task set status = 'PENDING' where status = 'CANCELLED';"""
+        with _store_lock:
+            with self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(update_sql)
 
     def _initialize_database(self):
         if self.connection:

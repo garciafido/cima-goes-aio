@@ -218,12 +218,6 @@ def write_clipping_to_info_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
 def write_clipping_to_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippingInfo):
     _write_clipping_to_any_dataset(dataset, dscd)
 
-    dataset.summary = f'This file contains the brightness temperature of channel 13 from GOES 16 satellite, ' \
-                      f'within the area of South America delimited approximately ' \
-                      f'by latitude {dscd.region.lat_north}°N and {-dscd.region.lat_south}°S; longitude {-dscd.region.lon_west}°W and {-dscd.region.lon_east}°W.' \
-                      f'To obtain the corresponding Lat-Lon grids, vectors cutting x and y are attached respectively, ' \
-                      f'or you can download the file with the grids generated "SA-CMIPF-2km-75W" and "SA-CMIPF-2km-89W" in the project root directory'
-
 
 def fill_clipped_variable_from_source(clipped_dataset: netCDF4.Dataset,
                                       source_dataset: netCDF4.Dataset,
