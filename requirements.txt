@@ -1,6 +1,8 @@
+aiohttp
 netCDF4
 apsw
 uvloop
 aiomultiprocess
 pyproj
 google-cloud-datastore
+google-cloud-storage

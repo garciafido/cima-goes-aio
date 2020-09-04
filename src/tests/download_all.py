@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import asyncio
 import multiprocessing
@@ -10,6 +11,7 @@ from generate_one_file import save_SA_netcdf
 
 
 DATABASE_FILEPATH = "test.db"
+DOWNLOAD_DIR = "./"
 
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
@@ -18,7 +20,7 @@ async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
 
 async def on_success(task_name: str, dataset: Dataset, queue: multiprocessing.Queue):
     print(task_name)
-    await save_SA_netcdf(dataset, path=os.path.dirname(task_name))
+    await save_SA_netcdf(dataset, path=os.path.join(DOWNLOAD_DIR, os.path.dirname(task_name)))
     queue.put(Processed(task_name))
 
 
@@ -35,10 +37,12 @@ async def main():
     print(store.get_stats())
     store.free_taken()
     store.free_cancelled()
-    print(store.get_stats())
-    await store.process(process_taks, 1)
+    tasks_remain = True
+    while tasks_remain:
+        print(f"{time.time() - start_time} seconds {store.get_stats()}")
+        tasks_remain = await store.process(process_taks, 3)
     print("async --- %s seconds ---" % (time.time() - start_time))
-
+    print(store.get_stats())
 
 if __name__ == "__main__":
     asyncio.run(main())

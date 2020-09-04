@@ -151,11 +151,14 @@ class Store(object):
     async def process(self, process_taks: Callable[[List[str]], Awaitable[None]], pool_size: int):
         queue = self._run_queue()
         files_pools = self._get_pools(pool_size, queue)
-        print([len(x[0]) for x in files_pools])
+        if not sum([len(x[0]) for x in files_pools]):
+            print([len(x[0]) for x in files_pools])
+            return False
 
         async with Pool(loop_initializer=uvloop.new_event_loop) as pool:
             await pool.starmap(process_taks, files_pools)
         queue.put(BreakCommand())
+        return True
 
     def put(self, command: Command):
         if isinstance(command, Processed):
