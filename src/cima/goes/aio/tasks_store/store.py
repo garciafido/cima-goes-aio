@@ -1,3 +1,4 @@
+import asyncio
 import multiprocessing
 import os
 import datetime
@@ -158,6 +159,8 @@ class Store(object):
         async with Pool(loop_initializer=uvloop.new_event_loop) as pool:
             await pool.starmap(process_taks, files_pools)
         queue.put(BreakCommand())
+        while not queue.empty():
+            await asyncio.sleep(1)
         return True
 
     def put(self, command: Command):
