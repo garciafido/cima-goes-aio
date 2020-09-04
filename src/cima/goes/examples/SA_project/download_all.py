@@ -12,9 +12,11 @@ from generate_one_file import save_SA_netcdf
 
 DATABASE_FILEPATH = "test.db"
 DOWNLOAD_DIR = "./"
+BATCH_SIZE_PER_WORKER = 30
 
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
+    print("CANCELLED:", task_name)
     queue.put(Cancelled(task_name, str(e)))
 
 
@@ -40,7 +42,7 @@ async def main():
     tasks_remain = True
     while tasks_remain:
         print(f"{time.time() - start_time} seconds {store.get_stats()}")
-        tasks_remain = await store.process(process_taks, 30)
+        tasks_remain = await store.process(process_taks, BATCH_SIZE_PER_WORKER)
     print("async --- %s seconds ---" % (time.time() - start_time))
     print(store.get_stats())
 
