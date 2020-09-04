@@ -12,6 +12,7 @@ from generate_one_file import save_SA_netcdf
 
 DATABASE_FILEPATH = "test.db"
 DOWNLOAD_DIR = "./"
+#DOWNLOAD_DIR = "/datosmunin/fido/SouthAmerica"
 BATCH_SIZE_PER_WORKER = 30
 
 
