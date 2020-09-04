@@ -51,7 +51,8 @@ async def download_datasets(names: List[str],
     tasks = []
     storage_client = storage.Client(project="<none>", credentials=AnonymousCredentials())
     bucket = storage_client.get_bucket(GOES_PUBLIC_BUCKET)
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=10*60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         for name in names:
             blob = bucket.blob(name)
             url = blob.public_url
