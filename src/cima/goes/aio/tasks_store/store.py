@@ -150,17 +150,21 @@ class Store(object):
         pass
 
     async def process(self, process_taks: Callable[[List[str]], Awaitable[None]], pool_size: int):
+        async def finish():
+            queue.put(BreakCommand())
+            while not queue.empty():
+                await asyncio.sleep(1)
+
         queue = self._run_queue()
         files_pools = self._get_pools(pool_size, queue)
         if not sum([len(x[0]) for x in files_pools]):
             print([len(x[0]) for x in files_pools])
+            await finish()
             return False
 
         async with Pool(loop_initializer=uvloop.new_event_loop) as pool:
             await pool.starmap(process_taks, files_pools)
-        queue.put(BreakCommand())
-        while not queue.empty():
-            await asyncio.sleep(1)
+        await finish()
         return True
 
     def put(self, command: Command):

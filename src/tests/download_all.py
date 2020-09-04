@@ -40,7 +40,7 @@ async def main():
     tasks_remain = True
     while tasks_remain:
         print(f"{time.time() - start_time} seconds {store.get_stats()}")
-        tasks_remain = await store.process(process_taks, 3)
+        tasks_remain = await store.process(process_taks, 30)
     print("async --- %s seconds ---" % (time.time() - start_time))
     print(store.get_stats())
 
