@@ -67,7 +67,6 @@ class Store(object):
                 rows = cursor.fetchall()
                 if not rows:
                     raise Exception(f"{name} does not exists")
-                print(update_sql)
                 cursor.execute(update_sql)
                 return name
 
