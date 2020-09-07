@@ -17,9 +17,10 @@ MAX_CONCURRENT = 10
 
 async def download(url: str,
                    session: aiohttp.ClientSession=None,
-                   semaphore: asyncio.Semaphore=None) -> bytes:
+                   semaphore: asyncio.Semaphore=None,
+                   proxy: str=None) -> bytes:
     async with semaphore:
-        async with session.get(url) as resp:
+        async with session.get(url, proxy=proxy) as resp:
             return await resp.read()
 
 
@@ -32,17 +33,19 @@ def get_blob_dataset(blob: Blob) -> netCDF4.Dataset:
 
 async def get_dataset(url: str,
                       session: aiohttp.ClientSession=None,
-                      semaphore: asyncio.Semaphore=None) -> netCDF4.Dataset:
-    data = await download(url, session, semaphore=semaphore)
+                      semaphore: asyncio.Semaphore=None,
+                      proxy: str=None) -> netCDF4.Dataset:
+    data = await download(url, session, semaphore=semaphore, proxy=proxy)
     return netCDF4.Dataset("in_memory_file", mode='r', memory=data)
 
 
 async def download_datasets(names: List[str],
                             on_success: Callable[[str, netCDF4.Dataset], Awaitable[None]],
-                            on_error: Callable[[str, Exception], Awaitable[None]]):
+                            on_error: Callable[[str, Exception], Awaitable[None]],
+                            proxy: str=None):
     async def process(name, url, session, semaphore):
         try:
-            dataset = await get_dataset(url, session=session, semaphore=semaphore)
+            dataset = await get_dataset(url, session=session, semaphore=semaphore, proxy=proxy)
             await on_success(name, dataset)
         except Exception as e:
             await on_error(name, e)

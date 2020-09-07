@@ -14,6 +14,7 @@ DATABASE_FILEPATH = "test.db"
 DOWNLOAD_DIR = "./"
 #DOWNLOAD_DIR = "/datosmunin/fido/SouthAmerica"
 BATCH_SIZE_PER_WORKER = 30
+PROXY=None
 
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
@@ -31,7 +32,8 @@ async def process_taks(names: List[str], queue):
     await download_datasets(
         names,
         on_success=lambda x, y: on_success(x, y, queue),
-        on_error=lambda x, y: on_error(x, y, queue))
+        on_error=lambda x, y: on_error(x, y, queue),
+        proxy=PROXY)
 
 
 async def main():
