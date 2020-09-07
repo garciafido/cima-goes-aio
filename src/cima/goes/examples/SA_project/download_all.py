@@ -14,7 +14,8 @@ DATABASE_FILEPATH = "test.db"
 DOWNLOAD_DIR = "./"
 #DOWNLOAD_DIR = "/datosmunin/fido/SouthAmerica"
 BATCH_SIZE_PER_WORKER = 30
-PROXY=None
+#PROXY=None
+PROXY="http://proxy.fcen.uba.ar:8080"
 
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):

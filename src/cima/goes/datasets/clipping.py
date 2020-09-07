@@ -70,7 +70,7 @@ def generate_info_files(product_bands: List[ProductBand],
 
 def _get_region_data_filename(filename_prefix, product_band: ProductBand, clipping_info: DatasetClippingInfo, sat_lon: float):
     resolution = clipping_info.spatial_resolution.split(" ")[0]
-    return f'{filename_prefix}{product_band.product.name}-{resolution}-{str(int(sat_lon)).replace("-", "").replace(".", "_")}W.nc'
+    return f'{filename_prefix}{product_band.product.name}-{resolution}-{str(-int(sat_lon)).replace("-", "").replace(".", "_")}W.nc'
 
 
 def get_sat_lon(dataset: netCDF4.Dataset):
