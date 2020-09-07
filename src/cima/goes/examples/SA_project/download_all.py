@@ -3,6 +3,7 @@ import os
 import asyncio
 import multiprocessing
 import time
+import traceback
 from typing import List
 from cima.goes.aio.gcs import Dataset
 from cima.goes.aio.gcs import download_datasets
@@ -20,6 +21,7 @@ PROXY="http://proxy.fcen.uba.ar:8080"
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
     print("CANCELLED:", task_name)
+    # print("ERROR:", traceback.print_exc())
     queue.put(Cancelled(task_name, str(e)))
 
 
