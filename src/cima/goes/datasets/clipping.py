@@ -11,7 +11,7 @@ from cima.goes.aio.gcs import get_blobs, get_blob_dataset
 from cima.goes.products import ProductBand
 
 old_sat_lon = -89.5
-actual_sat_lon = -75.2
+actual_sat_lon = -75.0
 default_major_order = FORTRAN_ORDER = 'F'
 
 
