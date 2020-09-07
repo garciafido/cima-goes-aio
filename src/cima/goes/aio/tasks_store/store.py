@@ -2,7 +2,7 @@ import asyncio
 import multiprocessing
 import os
 import datetime
-from typing import Callable, List, Awaitable
+from typing import Callable, List, Awaitable, Union
 
 import apsw
 import six
@@ -148,14 +148,14 @@ class Store(object):
     def __exit__(self, *args, **kwargs):
         pass
 
-    async def process(self, process_taks: Callable[[List[str]], Awaitable[None]], pool_size: int):
+    async def process(self, process_taks: Callable[[List[str]], Awaitable[None]], pool_size: int, workers_count: int=None):
         async def finish():
             queue.put(BreakCommand())
             while not queue.empty():
                 await asyncio.sleep(1)
 
         queue = self._run_queue()
-        files_pools = self._get_pools(pool_size, queue)
+        files_pools = self._get_pools(workers_count, pool_size, queue)
         if not sum([len(x[0]) for x in files_pools]):
             print([len(x[0]) for x in files_pools])
             await finish()
@@ -179,9 +179,11 @@ class Store(object):
         p.start()
         return queue
 
-    def _get_pools(self, files_per_pool: int, queue: multiprocessing.Queue):
+    def _get_pools(self, workers_count: Union[None, int], files_per_pool: int, queue: multiprocessing.Queue):
         pools = []
-        for _ in range(multiprocessing.cpu_count()):
+        if workers_count is None:
+            workers_count = multiprocessing.cpu_count()
+        for _ in range(workers_count):
             pool = []
             pools.append((pool, queue))
             for _ in range(files_per_pool):
