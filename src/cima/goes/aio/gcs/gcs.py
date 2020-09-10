@@ -46,7 +46,10 @@ async def download_datasets(names: List[str],
     async def process(name, url, session, semaphore):
         try:
             dataset = await get_dataset(url, session=session, semaphore=semaphore, proxy=proxy)
-            await on_success(name, dataset)
+            try:
+                await on_success(name, dataset)
+            finally:
+                dataset.close()
         except Exception as e:
             await on_error(name, e)
 
