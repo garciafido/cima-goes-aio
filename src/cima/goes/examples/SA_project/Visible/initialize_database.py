@@ -25,10 +25,11 @@ def init_store():
                 print("---------------  RANGE 2 --------------")
             elif range == 2 and date > to_date2:
                 break
-            blobs = get_blobs(ProductBand(Product.CMIPF, Band.RED), date)
-            for blob in blobs:
-                store.add(blob.name)
-            print(date.isoformat())
+            for hour in [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0]:
+                blobs = get_blobs(ProductBand(Product.CMIPF, Band.RED), date, hour)
+                for blob in blobs:
+                    store.add(blob.name)
+                print(date.isoformat(), hour)
             date = date + datetime.timedelta(days=1)
 
 
