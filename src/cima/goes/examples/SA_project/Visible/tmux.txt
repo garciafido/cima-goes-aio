@@ -1,0 +1,18 @@
+1) Create new session
+        tmux
+        (run your process)
+
+2) Detach
+        Ctrl+B  D
+
+3) List sessions
+        tmux list-sessions
+
+4) Attach
+        tmux attach-sessions -t <number>
+
+5) Kill
+        attach to session
+        type :
+        kill-session <enter>
+
