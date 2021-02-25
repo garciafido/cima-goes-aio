@@ -4,7 +4,7 @@
         (run your process)
 
 2) Detach
-        Ctrl+B  D
+        Ctrl+B D
 
 3) List sessions
         tmux list-sessions
@@ -14,6 +14,6 @@
 
 5) Kill
         attach to session
-        type :
+        Ctrl+B :
         kill-session <enter>
 
