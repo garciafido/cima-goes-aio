@@ -8,15 +8,21 @@ from cima.goes.aio.gcs import get_blobs
 from cima.goes.aio.tasks_store import Store
 
 
-DATABASE_FILEPATH = "visible.db"
-
+DATABASE_FILEPATH = "periodo_relampago.db"
+all_until_today = False
 
 def init_store():
-    date=datetime.date(2017, 7, 11)
-    to_date1=datetime.date(2017, 11, 30)
-    from_date2=datetime.date(2017, 12, 15)
-    to_date2=datetime.date.today()
-    range = 1
+    if all_until_today:
+        date=datetime.date(2017, 7, 11)
+        to_date1=datetime.date(2017, 11, 30)
+        from_date2=datetime.date(2017, 12, 15)
+        to_date2=datetime.date.today()
+        range = 1
+    else:
+        # Agosto 2018 - Abril 2019
+        date = datetime.date(2018, 8, 1)
+        to_date2 = datetime.date(2019, 4, 30)
+        range = 2
     with Store(DATABASE_FILEPATH) as store:
         while True:
             if range == 1 and date > to_date1:

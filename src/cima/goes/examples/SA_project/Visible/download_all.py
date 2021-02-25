@@ -11,7 +11,7 @@ from cima.goes.aio.tasks_store import Store, Processed, Cancelled
 from generate_one_file import save_SA_netcdf
 
 
-DATABASE_FILEPATH = "visible.db"
+DATABASE_FILEPATH = "periodo_relampago.db"
 DOWNLOAD_DIR = "./"
 #DOWNLOAD_DIR = "/datoslinus/jruiz/Datos_GOES/SouthAmerica/Visible"
 BATCH_SIZE_PER_WORKER = 30

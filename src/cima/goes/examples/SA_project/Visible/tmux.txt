@@ -1,5 +1,6 @@
 1) Create new session
         tmux
+        conda activate cima-goes-aio
         (run your process)
 
 2) Detach

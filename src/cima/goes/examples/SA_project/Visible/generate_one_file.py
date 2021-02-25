@@ -22,7 +22,7 @@ def write_institutional_info_to_dataset(dataset: netCDF4.Dataset, clipping_info:
                       f'{-clipping_info.region.lon_east}°W.' \
                       f'To obtain the corresponding Lat-Lon grids, vectors cutting x and y are attached respectively, ' \
                       f'or you can download the file with the grids generated ' \
-                      f'"SA-CMIPF-500m-75W" and "SA-CMIPF-500m-89W" in the project root directory'
+                      f'"SA-CMIPF-0.5km-75W" and "SA-CMIPF-0.5km-89W" in the project root directory'
 
 
 async def save_SA_netcdf(source_dataset: netCDF4.Dataset, path="./"):
@@ -57,7 +57,7 @@ SA_clipping_info: Dict[float, Union[None, DatasetClippingInfo]] = {
 async def get_clipping_info(sat_lon: float) -> DatasetClippingInfo:
     clipping_info = SA_clipping_info[sat_lon]
     if clipping_info is None:
-        info_dataset = netCDF4.Dataset(f'SA-CMIPF-500m-{-int(sat_lon)}W.nc')
+        info_dataset = netCDF4.Dataset(f'SA-CMIPF-0.5km-{-int(sat_lon)}W.nc')
         SA_clipping_info[sat_lon] = get_clipping_info_from_info_dataset(info_dataset)
     return SA_clipping_info[sat_lon]
 
