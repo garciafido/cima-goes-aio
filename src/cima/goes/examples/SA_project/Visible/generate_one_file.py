@@ -65,10 +65,9 @@ async def get_clipping_info(sat_lon: float) -> DatasetClippingInfo:
 async def test_one():
     product_band = ProductBand(product=Product.CMIPF, band=Band.RED)
     blob = get_blobs(product_band, datetime.date(year=2018, month=8, day=1), hour=15)[0]
-    save_blob(blob, f'./{os.path.basename(blob.name)}')
+    # save_blob(blob, f'./{os.path.basename(blob.name)}')
     dataset = get_blob_dataset(blob)
-
-    # await save_SA_netcdf(dataset)
+    await save_SA_netcdf(dataset)
 
 
 if __name__ == "__main__":

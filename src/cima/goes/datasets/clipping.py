@@ -86,7 +86,7 @@ def _generate_clipping_info(product_band: ProductBand, latLonRegion: LatLonRegio
     dataset = get_blob_dataset(blob)
     clipping_info[old_sat_lon] = get_clipping_info_from_dataset(dataset, latLonRegion)
 
-    blob = get_blobs(product_band, datetime.date(year=2019, month=6, day=1), hour=15)[0]
+    blob = get_blobs(product_band, datetime.date(year=2018, month=8, day=1), hour=15)[0]
     dataset = get_blob_dataset(blob)
     clipping_info[actual_sat_lon] = get_clipping_info_from_dataset(dataset, latLonRegion)
 
@@ -116,7 +116,7 @@ def get_clipping_info_from_info_dataset(info_dataset: netCDF4.Dataset):
         region=latLonRegion,
         indexes=indexes,
         lats=info_dataset.variables['lats'][:,:],
-        lons=info_dataset.variables['lats'][:,:],
+        lons=info_dataset.variables['lons'][:,:],
         x=info_dataset.variables['x'][:],
         y=info_dataset.variables['y'][:]
     )
@@ -135,7 +135,7 @@ def get_clipping_info_from_dataset(dataset: netCDF4.Dataset, region: LatLonRegio
         lats=lats[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max],
         lons=lons[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max],
         x=x[indexes.col_min: indexes.col_max],
-        y=x[indexes.row_min: indexes.row_max]
+        y=y[indexes.row_min: indexes.row_max]
     )
 
 
@@ -172,7 +172,7 @@ def _write_clipping_to_any_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_x.comments = 'Vector x of the cropping area'
     new_x.units = 'rad'
     new_x.axis = 'X'
-    new_x[:] = dscd.x
+    new_x[:] = dscd.x[:]
 
     # create y
     new_y = dataset.createVariable('y', dscd.y.dtype, ('cropped_y',), zlib=True)
@@ -181,7 +181,7 @@ def _write_clipping_to_any_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_y.comments = 'Vector y of the cropping area'
     new_y.units = 'rad'
     new_y.axis = 'Y'
-    new_y[:] = dscd.y
+    new_y[:] = dscd.y[:]
 
 
 def write_clipping_to_info_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippingInfo):
@@ -205,7 +205,7 @@ def write_clipping_to_info_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_lats.long_name = 'latitude'
     new_lats.units = 'degrees_north'
     new_lats.axis = 'Y'
-    new_lats[:,:] = dscd.lats
+    new_lats[:,:] = dscd.lats[:,:]
 
     # create longitude axis
     new_lons = dataset.createVariable('lons', dscd.lons.dtype, ('cropped_y', 'cropped_x'), zlib=True)
@@ -213,7 +213,7 @@ def write_clipping_to_info_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippi
     new_lons.long_name = 'longitude'
     new_lons.units = 'degrees_east'
     new_lons.axis = 'X'
-    new_lons[:,:] = dscd.lons
+    new_lons[:,:] = dscd.lons[:,:]
 
 
 def write_clipping_to_dataset(dataset: netCDF4.Dataset, dscd: DatasetClippingInfo):
@@ -252,16 +252,16 @@ def nearest_indexes(lat, lon, lats, lons, major_order):
 
 
 def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes:
-    x1, y1 = nearest_indexes(region.lat_north, region.lon_west, lats, lons, major_order)
-    x2, y2 = nearest_indexes(region.lat_north, region.lon_east, lats, lons, major_order)
-    x3, y3 = nearest_indexes(region.lat_south, region.lon_west, lats, lons, major_order)
-    x4, y4 = nearest_indexes(region.lat_south, region.lon_east, lats, lons, major_order)
+    nw_lat, nw_lon = nearest_indexes(region.lat_north, region.lon_west, lats, lons, major_order)
+    ne_lat, ne_lon = nearest_indexes(region.lat_north, region.lon_east, lats, lons, major_order)
+    sw_lat, sw_lon = nearest_indexes(region.lat_south, region.lon_west, lats, lons, major_order)
+    se_lat, se_lon = nearest_indexes(region.lat_south, region.lon_east, lats, lons, major_order)
 
     indexes = RegionIndexes()
-    indexes.col_min = int(min(x1, x2, x3, x4))
-    indexes.col_max = int(max(x1, x2, x3, x4))
-    indexes.row_min = int(min(y1, y2, y3, y4))
-    indexes.row_max = int(max(y1, y2, y3, y4))
+    indexes.col_min = int(min(nw_lon, ne_lon, sw_lon, se_lon))
+    indexes.col_max = int(max(nw_lon, ne_lon, sw_lon, se_lon))
+    indexes.row_min = int(min(nw_lat, ne_lat, sw_lat, se_lat))
+    indexes.row_max = int(max(nw_lat, ne_lat, sw_lat, se_lat))
     return indexes
 
 
