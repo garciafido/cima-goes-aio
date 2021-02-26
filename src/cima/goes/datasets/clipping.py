@@ -51,7 +51,7 @@ clipping_info_dict = Dict[float, DatasetClippingInfo]
 def generate_info_files(product_bands: List[ProductBand],
                         latLonRegion: LatLonRegion,
                         filename_prefix="./",
-                        institution="Center for Oceanic and Atmospheric Research(CIMA), University of Buenos Aires (UBA) > ARGENTINA",
+                        institution="Center for Oceanic and Atmospheric Research (CIMA), University of Buenos Aires (UBA) > ARGENTINA",
                         creator_name="Juan Ruiz and Paola Salio",
                         creator_email="jruiz@cima.fcen.uba.ar, salio@cima.fcen.uba.ar") -> None:
     for product_band in product_bands:

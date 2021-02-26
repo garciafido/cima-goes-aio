@@ -31,6 +31,10 @@ def get_blob_dataset(blob: Blob) -> netCDF4.Dataset:
     return netCDF4.Dataset("in_memory_file", mode='r', memory=in_memory_file.read())
 
 
+def save_blob(blob: Blob, filename: str):
+    blob.download_to_filename(filename)
+
+
 async def get_dataset(url: str,
                       session: aiohttp.ClientSession=None,
                       semaphore: asyncio.Semaphore=None,

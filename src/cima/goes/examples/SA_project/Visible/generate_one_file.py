@@ -3,7 +3,7 @@ import datetime
 import os
 from typing import Dict, Union
 import netCDF4
-from cima.goes.aio.gcs import get_blobs, get_blob_dataset
+from cima.goes.aio.gcs import get_blobs, get_blob_dataset, save_blob
 from cima.goes.datasets import write_clipping_to_dataset, DatasetClippingInfo
 from cima.goes.datasets.clipping import fill_clipped_variable_from_source, get_clipping_info_from_info_dataset, \
     old_sat_lon, actual_sat_lon, get_sat_lon
@@ -64,10 +64,11 @@ async def get_clipping_info(sat_lon: float) -> DatasetClippingInfo:
 
 async def test_one():
     product_band = ProductBand(product=Product.CMIPF, band=Band.RED)
-    blob = get_blobs(product_band, datetime.date(year=2017, month=8, day=1), hour=15)[0]
+    blob = get_blobs(product_band, datetime.date(year=2018, month=8, day=1), hour=15)[0]
+    save_blob(blob, f'./{os.path.basename(blob.name)}')
     dataset = get_blob_dataset(blob)
 
-    await save_SA_netcdf(dataset)
+    # await save_SA_netcdf(dataset)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/src/cima_goes_aio.egg-info" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.8 (cima-goesaio)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.9 (cima-goes-images)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
