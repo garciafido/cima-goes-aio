@@ -2,6 +2,8 @@ import netCDF4
 import numpy as np
 from cima.goes.products import ProductBand, Product, Band
 from cima.goes.datasets import LatLonRegion, generate_info_files, RegionIndexes, get_clipping_info_from_info_dataset
+#PROXY=None
+PROXY="http://proxy.fcen.uba.ar:8080"
 
 
 def run():

@@ -250,6 +250,9 @@ def copy_variable(variable, dest_dataset):
 
 
 def nearest_indexes(lat, lon, lats, lons, major_order):
+    # d_lat = np.abs(lats-lat)
+    # d_lon = np.abs(lons-lon)
+    # distance = d_lat * d_lat + d_lon * d_lon
     distance = np.abs(lats-lat) + np.abs(lons-lon)
     return np.where(distance == distance.min())
 
