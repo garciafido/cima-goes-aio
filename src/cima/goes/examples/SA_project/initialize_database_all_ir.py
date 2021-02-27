@@ -8,7 +8,7 @@ from cima.goes.aio.gcs import get_blobs
 from cima.goes.aio.tasks_store import Store
 
 
-DATABASE_FILEPATH = "test.db"
+DATABASE_FILEPATH = "all_ir.db"
 
 
 def init_store():

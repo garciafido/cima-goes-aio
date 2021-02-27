@@ -3,20 +3,19 @@ import os
 import asyncio
 import multiprocessing
 import time
-import traceback
 from typing import List
 from cima.goes.aio.gcs import Dataset
 from cima.goes.aio.gcs import download_datasets
 from cima.goes.aio.tasks_store import Store, Processed, Cancelled
-from generate_one_file import save_SA_netcdf
+from cima.goes.examples.SA_project.generate_one_file import save_SA_netcdf
 
 
-DATABASE_FILEPATH = "test.db"
+DATABASE_FILEPATH = "relampago_vis.db"
 DOWNLOAD_DIR = "./"
-#DOWNLOAD_DIR = "/datoslinus/jruiz/Datos_GOES/SouthAmerica"
-BATCH_SIZE_PER_WORKER = 30
-#PROXY=None
-PROXY="http://proxy.fcen.uba.ar:8080"
+#DOWNLOAD_DIR = "/datoslinus/jruiz/Datos_GOES/SouthAmerica/Relampago/Visible"
+BATCH_SIZE_PER_WORKER = 2
+PROXY=None
+#PROXY="http://proxy.fcen.uba.ar:8080"
 
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
@@ -27,7 +26,7 @@ async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
 
 async def on_success(task_name: str, dataset: Dataset, queue: multiprocessing.Queue):
     print(task_name)
-    await save_SA_netcdf(dataset, path=os.path.join(DOWNLOAD_DIR, os.path.dirname(task_name)))
+    save_SA_netcdf(dataset, path=os.path.join(DOWNLOAD_DIR, os.path.dirname(task_name)))
     queue.put(Processed(task_name))
 
 
