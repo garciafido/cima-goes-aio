@@ -14,9 +14,9 @@ from generate_one_file import save_SA_netcdf
 DATABASE_FILEPATH = "periodo_relampago.db"
 DOWNLOAD_DIR = "./"
 #DOWNLOAD_DIR = "/datoslinus/jruiz/Datos_GOES/SouthAmerica/Relampago/Visible"
-BATCH_SIZE_PER_WORKER = 30
-#PROXY=None
-PROXY="http://proxy.fcen.uba.ar:8080"
+BATCH_SIZE_PER_WORKER = 2
+PROXY=None
+#PROXY="http://proxy.fcen.uba.ar:8080"
 
 
 async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):

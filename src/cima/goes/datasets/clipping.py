@@ -54,10 +54,12 @@ def generate_info_files(product_bands: List[ProductBand],
                         institution="Center for Oceanic and Atmospheric Research (CIMA), University of Buenos Aires (UBA) > ARGENTINA",
                         creator_name="Juan Ruiz and Paola Salio",
                         creator_email="jruiz@cima.fcen.uba.ar, salio@cima.fcen.uba.ar") -> None:
+    filenames = []
     for product_band in product_bands:
         all_clipping_info = _generate_clipping_info(product_band, latLonRegion)
         for sat_lon, clipping_info in all_clipping_info.items():
             filename = _get_region_data_filename(filename_prefix, product_band, clipping_info, sat_lon)
+            filenames.append(filename)
             info_dataset = netCDF4.Dataset(filename, 'w', format='NETCDF4')
             try:
                 info_dataset.dataset_name = filename
@@ -67,6 +69,7 @@ def generate_info_files(product_bands: List[ProductBand],
                 info_dataset.creator_email = creator_email
             finally:
                 info_dataset.close()
+    return filenames
 
 
 def _get_region_data_filename(filename_prefix, product_band: ProductBand, clipping_info: DatasetClippingInfo, sat_lon: float):
@@ -247,8 +250,8 @@ def copy_variable(variable, dest_dataset):
 
 
 def nearest_indexes(lat, lon, lats, lons, major_order):
-    distance = (lat - lats) * (lat - lats) + (lon - lons) * (lon - lons)
-    return np.unravel_index(np.argmin(distance), lats.shape, major_order)
+    distance = np.abs(lats-lat) + np.abs(lons-lon)
+    return np.where(distance == distance.min())
 
 
 def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes:
@@ -258,10 +261,12 @@ def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes
     se_lat, se_lon = nearest_indexes(region.lat_south, region.lon_east, lats, lons, major_order)
 
     indexes = RegionIndexes()
+
     indexes.col_min = int(min(nw_lon, ne_lon, sw_lon, se_lon))
     indexes.col_max = int(max(nw_lon, ne_lon, sw_lon, se_lon))
     indexes.row_min = int(min(nw_lat, ne_lat, sw_lat, se_lat))
     indexes.row_max = int(max(nw_lat, ne_lat, sw_lat, se_lat))
+
     return indexes
 
 
