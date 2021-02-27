@@ -25,8 +25,8 @@ def write_institutional_info_to_dataset(dataset: netCDF4.Dataset, clipping_info:
                       f'"SA-CMIPF-75W" and "SA-CMIPF-89W" in the project root directory'
 
 
-async def save_SA_netcdf(source_dataset: netCDF4.Dataset, path="./"):
-    clipping_info: DatasetClippingInfo = await get_clipping_info(source_dataset, prefix='SA-CMIPF')
+def save_SA_netcdf(source_dataset: netCDF4.Dataset, path="./"):
+    clipping_info: DatasetClippingInfo = get_clipping_info(source_dataset, prefix='SA-CMIPF')
     filename = os.path.join(path, f"SA-{source_dataset.dataset_name}")
     if not os.path.exists(path):
         os.makedirs(path)
@@ -62,7 +62,7 @@ def get_info_filename(dataset: netCDF4.Dataset, prefix):
     return f'{prefix}-{resolution}-{-int(sat_lon)}W.nc'
 
 
-async def get_clipping_info(dataset: netCDF4.Dataset, prefix: str) -> DatasetClippingInfo:
+def get_clipping_info(dataset: netCDF4.Dataset, prefix: str) -> DatasetClippingInfo:
     imager_projection = dataset.variables['goes_imager_projection']
     sat_lon = imager_projection.longitude_of_projection_origin
     clipping_info = SA_clipping_info[sat_lon]
@@ -73,13 +73,28 @@ async def get_clipping_info(dataset: netCDF4.Dataset, prefix: str) -> DatasetCli
     return SA_clipping_info[sat_lon]
 
 
-async def test_one():
-    product_band = ProductBand(product=Product.CMIPF, band=Band.RED)
-    blob = get_blobs(product_band, datetime.date(year=2018, month=8, day=1), hour=15)[0]
-    # save_blob(blob, f'./{os.path.basename(blob.name)}')
-    dataset = get_blob_dataset(blob)
-    await save_SA_netcdf(dataset)
+async def get_vis():
+        product_band = ProductBand(product=Product.CMIPF, band=Band.RED)
+        blob = get_blobs(product_band, datetime.date(year=2018, month=8, day=1), hour=15)[0]
+        # save_blob(blob, f'./{os.path.basename(blob.name)}')
+        dataset = get_blob_dataset(blob)
+        save_SA_netcdf(dataset)
+        dataset.close()
+
+
+async def get_ir():
+        product_band = ProductBand(product=Product.CMIPF, band=Band.CLEAN_LONGWAVE_WINDOW)
+        blob = get_blobs(product_band, datetime.date(year=2018, month=8, day=1), hour=15)[0]
+        # save_blob(blob, f'./{os.path.basename(blob.name)}')
+        dataset = get_blob_dataset(blob)
+        save_SA_netcdf(dataset)
+        dataset.close()
+
+
+async def get_both():
+    await get_ir()
+    await get_vis()
 
 
 if __name__ == "__main__":
-    asyncio.run(test_one())
+    asyncio.run(get_both())
