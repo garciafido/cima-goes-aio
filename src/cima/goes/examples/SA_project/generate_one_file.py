@@ -1,12 +1,11 @@
 import asyncio
 import datetime
 import os
-from typing import Dict, Union
 import netCDF4
 from cima.goes.aio.gcs import get_blobs, get_blob_dataset, save_blob
 from cima.goes.datasets import write_clipping_to_dataset, DatasetClippingInfo
 from cima.goes.datasets.clipping import fill_clipped_variable_from_source, get_clipping_info_from_info_dataset, \
-    old_sat_lon, actual_sat_lon, get_sat_lon
+    old_sat_lon, actual_sat_lon, get_sat_lon, get_clipping_info
 from cima.goes.products import ProductBand, Product, Band
 
 
@@ -41,7 +40,7 @@ def write_institutional_info_to_dataset(dataset: netCDF4.Dataset, clipping_info:
 
 
 def save_SA_netcdf(source_dataset: netCDF4.Dataset, path="./", matrix_type=''):
-    clipping_info: DatasetClippingInfo = get_clipping_info(source_dataset, prefix='SA-CMIPF')
+    clipping_info: DatasetClippingInfo = get_clipping_info(source_dataset, matrix_type=matrix_type, name_prefix='SA-CMIPF')
     filename = os.path.join(path, f"SA-{source_dataset.dataset_name}")
     if not os.path.exists(path):
         os.makedirs(path)
@@ -69,31 +68,6 @@ def save_SA_netcdf(source_dataset: netCDF4.Dataset, path="./", matrix_type=''):
         fill_clipped_variable_from_source(clipped_dataset, source_dataset, comments)
     finally:
         clipped_dataset.close()
-
-
-SA_clipping_info: Dict[float, Union[None, DatasetClippingInfo]] = {
-    old_sat_lon: None,
-    actual_sat_lon: None,
-}
-
-
-def get_info_filename(dataset: netCDF4.Dataset, prefix):
-    imager_projection = dataset.variables['goes_imager_projection']
-    sat_lon = imager_projection.longitude_of_projection_origin
-    clipping_info = SA_clipping_info[sat_lon]
-    resolution = dataset.spatial_resolution.split(" ")[0]
-    return f'{prefix}-{resolution}-{-int(sat_lon)}W.nc'
-
-
-def get_clipping_info(dataset: netCDF4.Dataset, prefix: str) -> DatasetClippingInfo:
-    imager_projection = dataset.variables['goes_imager_projection']
-    sat_lon = imager_projection.longitude_of_projection_origin
-    clipping_info = SA_clipping_info[sat_lon]
-    if clipping_info is None:
-        filename = get_info_filename(dataset, prefix)
-        info_dataset = netCDF4.Dataset(filename)
-        SA_clipping_info[sat_lon] = get_clipping_info_from_info_dataset(info_dataset)
-    return SA_clipping_info[sat_lon]
 
 
 async def get_vis():

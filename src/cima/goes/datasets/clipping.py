@@ -1,5 +1,6 @@
+import multiprocessing
 import datetime
-from typing import List, Dict
+from typing import List, Dict, Union
 import math
 
 import netCDF4
@@ -14,6 +15,7 @@ old_sat_lon = -89.5
 actual_sat_lon = -75.0
 default_major_order = FORTRAN_ORDER = 'F'
 
+_clipping_info = multiprocessing.Lock()
 
 @dataclass
 class LatLonRegion:
@@ -48,6 +50,33 @@ class DatasetClippingInfo:
 clipping_info_dict = Dict[float, DatasetClippingInfo]
 
 
+def get_info_filename(resolution, sat_lon, name_prefix) -> str:
+    return f'{name_prefix}-{resolution}-{-int(sat_lon)}W.nc'
+
+
+def get_info_filename_for_dataset(dataset: netCDF4.Dataset, name_prefix) -> str:
+    imager_projection = dataset.variables['goes_imager_projection']
+    sat_lon = imager_projection.longitude_of_projection_origin
+    resolution = dataset.spatial_resolution.split(" ")[0]
+    return get_info_filename(resolution, sat_lon, name_prefix)
+
+
+clipping_info_cache: Dict[str, Union[None, DatasetClippingInfo]] = {}
+
+def get_clipping_info(dataset: netCDF4.Dataset, name_prefix: str, matrix_type='') -> DatasetClippingInfo:
+    global clipping_info_cache
+    imager_projection = dataset.variables['goes_imager_projection']
+    sat_lon = imager_projection.longitude_of_projection_origin
+    clipping_key = f'{matrix_type}-{sat_lon}'
+    with _clipping_info:
+        clipping_info = clipping_info_cache[clipping_key] if clipping_key in clipping_info_cache else None
+        if clipping_info is None:
+            filename = get_info_filename_for_dataset(dataset, name_prefix)
+            info_dataset = netCDF4.Dataset(filename)
+            clipping_info_cache[clipping_key] = get_clipping_info_from_info_dataset(info_dataset)
+        return clipping_info_cache[clipping_key]
+
+
 def generate_info_files(product_bands: List[ProductBand],
                         latLonRegion: LatLonRegion,
                         filename_prefix="./",
@@ -58,7 +87,8 @@ def generate_info_files(product_bands: List[ProductBand],
     for product_band in product_bands:
         all_clipping_info = _generate_clipping_info(product_band, latLonRegion)
         for sat_lon, clipping_info in all_clipping_info.items():
-            filename = _get_region_data_filename(filename_prefix, product_band, clipping_info, sat_lon)
+            resolution = clipping_info.spatial_resolution.split(" ")[0]
+            filename = get_info_filename(resolution, sat_lon, filename_prefix)
             filenames.append(filename)
             info_dataset = netCDF4.Dataset(filename, 'w', format='NETCDF4')
             try:
@@ -72,9 +102,9 @@ def generate_info_files(product_bands: List[ProductBand],
     return filenames
 
 
-def _get_region_data_filename(filename_prefix, product_band: ProductBand, clipping_info: DatasetClippingInfo, sat_lon: float):
-    resolution = clipping_info.spatial_resolution.split(" ")[0]
-    return f'{filename_prefix}{product_band.product.name}-{resolution}-{str(abs(math.trunc(sat_lon))).replace("-", "").replace(".", "_")}W.nc'
+# def _get_region_data_filename(filename_prefix, product_band: ProductBand, clipping_info: DatasetClippingInfo, sat_lon: float):
+#     resolution = clipping_info.spatial_resolution.split(" ")[0]
+#     return f'{filename_prefix}{product_band.product.name}-{resolution}-{str(abs(math.trunc(sat_lon))).replace("-", "").replace(".", "_")}W.nc'
 
 
 def get_sat_lon(dataset: netCDF4.Dataset):
@@ -250,18 +280,29 @@ def copy_variable(variable, dest_dataset):
 
 
 def nearest_indexes(lat, lon, lats, lons, major_order):
-    # d_lat = np.abs(lats-lat)
-    # d_lon = np.abs(lons-lon)
+    # d_lat = lat - lats
+    # d_lon = lon - lons
     # distance = d_lat * d_lat + d_lon * d_lon
-    distance = np.abs(lats-lat) + np.abs(lons-lon)
+    distance = np.abs(lats - lat) + np.abs(lons - lon)
     return np.where(distance == distance.min())
 
 
 def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes:
-    nw_lat, nw_lon = nearest_indexes(region.lat_north, region.lon_west, lats, lons, major_order)
-    ne_lat, ne_lon = nearest_indexes(region.lat_north, region.lon_east, lats, lons, major_order)
-    sw_lat, sw_lon = nearest_indexes(region.lat_south, region.lon_west, lats, lons, major_order)
-    se_lat, se_lon = nearest_indexes(region.lat_south, region.lon_east, lats, lons, major_order)
+    lats_aux = np.nan_to_num(lats, posinf=1.7976931348623157e+10, copy=True)
+    # lats_aux = lats[:,:]
+    # lats_aux[lats_aux == np.inf] = 999
+    lons_aux = np.nan_to_num(lons, posinf=1.7976931348623157e+10, copy=True)
+    # lons_aux = lons[:,:]
+    # lons_aux[lons_aux == np.inf] = 999
+    nw_lat, nw_lon = nearest_indexes(region.lat_north, region.lon_west, lats_aux, lons_aux, major_order)
+    ne_lat, ne_lon = nearest_indexes(region.lat_north, region.lon_east, lats_aux, lons_aux, major_order)
+    sw_lat, sw_lon = nearest_indexes(region.lat_south, region.lon_west, lats_aux, lons_aux, major_order)
+    se_lat, se_lon = nearest_indexes(region.lat_south, region.lon_east, lats_aux, lons_aux, major_order)
+
+    print(nw_lat, nw_lon)
+    print(ne_lat, ne_lon)
+    print(sw_lat, sw_lon)
+    print(se_lat, se_lon)
 
     indexes = RegionIndexes()
 

@@ -10,8 +10,8 @@ from cima.goes.aio.tasks_store import Store, Processed, Cancelled
 from cima.goes.examples.SA_project.generate_one_file import save_SA_netcdf
 
 
-DATABASE_FILEPATH = "relampago_vis.db"
-DOWNLOAD_DIR = "./"
+DATABASE_FILEPATH = "periodo_relampago_vis.db"
+DOWNLOAD_DIR = "./Relamapgo/Visible"
 #DOWNLOAD_DIR = "/datoslinus/jruiz/Datos_GOES/SouthAmerica/Relampago/Visible"
 BATCH_SIZE_PER_WORKER = 2
 PROXY=None

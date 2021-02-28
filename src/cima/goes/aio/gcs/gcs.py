@@ -28,7 +28,8 @@ def get_blob_dataset(blob: Blob) -> netCDF4.Dataset:
     in_memory_file = io.BytesIO()
     blob.download_to_file(in_memory_file)
     in_memory_file.seek(0)
-    return netCDF4.Dataset("in_memory_file", mode='r', memory=in_memory_file.read())
+    bytes = in_memory_file.read()
+    return netCDF4.Dataset("in_memory_file", mode='r', memory=bytes)
 
 
 def save_blob(blob: Blob, filename: str):
