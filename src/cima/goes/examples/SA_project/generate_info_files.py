@@ -17,11 +17,11 @@ def run():
     )
     filenames = generate_info_files([visible, ir], SA_region, filename_prefix='SA-CMIPF')
     for filename in filenames:
+        print(filename)
         info_dataset = netCDF4.Dataset(filename)
         clipping_info = get_clipping_info_from_info_dataset(info_dataset)
         lats = clipping_info.lats
         lons = clipping_info.lons
-        print(filename)
         print(f'LAT min: {np.min(lats)} max: {np.nanmax(lats[lats != np.inf])}')
         print(f'LON min: {np.min(lons)} max: {np.nanmax(lons[lons != np.inf])}')
 

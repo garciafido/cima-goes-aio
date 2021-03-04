@@ -4,6 +4,7 @@ from typing import List, Dict, Union
 import math
 
 import netCDF4
+import cartopy
 import pyproj
 import numpy as np
 from dataclasses import dataclass
@@ -314,11 +315,29 @@ def find_indexes(region: LatLonRegion, lats, lons, major_order) -> RegionIndexes
     return indexes
 
 
-def get_lats_lons_x_y(dataset, indexes: RegionIndexes = None):
+def get_projection(dataset: netCDF4.Dataset) -> pyproj.Proj:
     imager_projection = dataset.variables['goes_imager_projection']
     sat_height = imager_projection.perspective_point_height
     sat_lon = imager_projection.longitude_of_projection_origin
     sat_sweep = imager_projection.sweep_angle_axis
+    return pyproj.Proj(proj='geos', h=sat_height, lon_0=sat_lon, sweep=sat_sweep)
+
+
+def get_crs_projection(dataset: netCDF4.Dataset):
+    imager_projection = dataset.variables['goes_imager_projection']
+    sat_height = imager_projection.perspective_point_height
+    sat_lon = imager_projection.longitude_of_projection_origin
+    sat_sweep = imager_projection.sweep_angle_axis
+    return cartopy.crs.Geostationary(
+        central_longitude=sat_lon,
+        satellite_height=sat_height,
+        false_easting=0,
+        false_northing=0,
+        globe=None,
+        sweep_axis=sat_sweep)
+
+
+def get_lats_lons_x_y(dataset, indexes: RegionIndexes = None):
     if indexes is None:
         source_x = dataset['x'][:]
         source_y = dataset['y'][:]
@@ -328,6 +347,6 @@ def get_lats_lons_x_y(dataset, indexes: RegionIndexes = None):
     x = source_x * sat_height
     y = source_y * sat_height
     XX, YY = np.meshgrid(np.array(x), np.array(y))
-    projection = pyproj.Proj(proj='geos', h=sat_height, lon_0=sat_lon, sweep=sat_sweep)
+    projection = get_projection(dataset)
     lons, lats = projection(XX, YY, inverse=True)
     return np.array(lats), np.array(lons), source_x, source_y
