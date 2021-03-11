@@ -15,13 +15,12 @@ from aiomultiprocess import Pool
 _store_lock = multiprocessing.Lock()
 
 
-@six.add_metaclass(SingletonType)
+# @six.add_metaclass(SingletonType)
 class Store(object):
     def __init__(self, database_filepath: str):
         self.database_filepath = database_filepath
         self.connection = None
         self._open_database()
-        #print('init database')
 
     def add(self, name: str, detail=''):
         add_sql = f"""INSERT INTO task(name, status, detail, begin)
@@ -42,6 +41,22 @@ class Store(object):
                 name = rows[0][0]
                 update_sql = f"""update task set status = 'TAKEN', detail = '{detail.replace("'", '''"''')}', begin = '{datetime.datetime.now().isoformat()}' where name = '{name}';"""
                 cursor.execute(update_sql)
+                return name
+
+    def list_all(self, where=None, select='*'):
+        if where is None:
+            where = ''
+        else:
+            wnere = f' where {where}'
+        select_sql = f"SELECT {select} from task{where};"
+        with _store_lock:
+            with self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(select_sql)
+                rows = cursor.fetchall()
+                if not rows:
+                    return []
+                name = rows
                 return name
 
     def _processed(self, name, detail=''):
