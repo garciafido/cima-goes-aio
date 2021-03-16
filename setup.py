@@ -8,7 +8,7 @@ from distutils.core import setup
 
 setup(
     name='cima-goes-aio',
-    version='0.1.b8',
+    version='0.1.b9',
     description='GOES-16 File Processing with asyncio and multiprocessing',
     author='Fido Garcia',
     author_email='garciafido@gmail.com',

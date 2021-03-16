@@ -48,6 +48,13 @@ class DatasetClippingInfo:
     y: any
 
 
+@dataclass
+class ClippedData:
+    lats: any
+    lons: any
+    data: any
+
+
 clipping_info_dict = Dict[float, DatasetClippingInfo]
 
 
@@ -171,6 +178,18 @@ def get_clipping_info_from_dataset(dataset: netCDF4.Dataset, region: LatLonRegio
         x=x[indexes.col_min: indexes.col_max],
         y=y[indexes.row_min: indexes.row_max]
     )
+
+
+def clip_data(data, lats, lons, region: LatLonRegion) -> ClippedData:
+    indexes = find_indexes(region, lats, lons, default_major_order)
+    return clip_data_indexes(indexes, data, lats, lons)
+
+
+def clip_data_indexes(indexes, data, lats, lons) -> ClippedData:
+    clipped_lats = np.array(lats[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max])
+    clipped_lons = np.array(lons[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max])
+    clipped_data = np.array(data[indexes.row_min:indexes.row_max, indexes.col_min:indexes.col_max])
+    return ClippedData(lats=clipped_lats, lons=clipped_lons, data=clipped_data)
 
 
 def get_spatial_resolution(dataset: netCDF4.Dataset) -> float:
