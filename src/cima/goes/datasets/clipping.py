@@ -185,10 +185,11 @@ def clip_data(data, lats, lons, region: LatLonRegion) -> ClippedData:
     return clip_data_indexes(indexes, data, lats, lons)
 
 
-def clip_data_indexes(indexes, data, lats, lons) -> ClippedData:
-    clipped_lats = np.array(lats[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max])
-    clipped_lons = np.array(lons[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max])
-    clipped_data = np.array(data[indexes.row_min:indexes.row_max, indexes.col_min:indexes.col_max])
+def clip_data_indexes(indexes: RegionIndexes, data, lats, lons, copy=False) -> ClippedData:
+    do_copy = np.array if copy else lambda x: x
+    clipped_lats = do_copy(lats[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max])
+    clipped_lons = do_copy(lons[indexes.row_min: indexes.row_max, indexes.col_min: indexes.col_max])
+    clipped_data = do_copy(data[indexes.row_min:indexes.row_max, indexes.col_min:indexes.col_max])
     return ClippedData(lats=clipped_lats, lons=clipped_lons, data=clipped_data)
 
 
