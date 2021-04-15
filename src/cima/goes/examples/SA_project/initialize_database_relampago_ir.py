@@ -8,7 +8,7 @@ from cima.goes.aio.gcs import get_blobs
 from cima.goes.aio.tasks_store import Store
 
 
-DATABASE_FILEPATH = "periodo_relampago_ir.db"
+DATABASE_FILEPATH = "periodo_relampago_noche_ir.db"
 all_until_today = False
 
 def init_store():
@@ -31,7 +31,8 @@ def init_store():
                 print("---------------  RANGE 2 --------------")
             elif range == 2 and date > to_date2:
                 break
-            for hour in [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0]:
+            # for hour in [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0]:
+            for hour in [1,2,3,4,5,6,7]:
                 blobs = get_blobs(ProductBand(Product.CMIPF, Band.CLEAN_LONGWAVE_WINDOW), date, hour)
                 for blob in blobs:
                     store.add(blob.name)
