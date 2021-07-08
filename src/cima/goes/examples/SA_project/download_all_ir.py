@@ -26,9 +26,9 @@ async def on_error(task_name: str, e: Exception, queue: multiprocessing.Queue):
 
 
 async def on_success(task_name: str, dataset: Dataset, queue: multiprocessing.Queue):
-    print(task_name)
-    await save_SA_netcdf(dataset, path=os.path.join(DOWNLOAD_DIR, os.path.dirname(task_name)), matrix_type='IR')
+    save_SA_netcdf(dataset, path=os.path.join(DOWNLOAD_DIR, os.path.dirname(task_name)), matrix_type='IR')
     queue.put(Processed(task_name))
+    print(task_name)
 
 
 async def process_tasks(names: List[str], queue):
