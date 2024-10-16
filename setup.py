@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # Compile and upload on pip:
-#    python setup.py bdist_wheel
-#    python -m twine upload dist/*
+#    Update version='xxx' in setup
+#    python3 -m pip install --upgrade build
+#    python3 -m build
+#    python3 -m pip install --upgrade twine
+#    update password in ~/.pypirc
+#    python3 -m twine upload dist/*
 
-from setuptools import find_namespace_packages
-from distutils.core import setup
+from setuptools import setup, find_namespace_packages
 
 setup(
     name='cima-goes-aio',
-    version='0.1.b10',
+    version='0.1.b12',
     description='GOES-16 File Processing with asyncio and multiprocessing',
     author='Fido Garcia',
     author_email='garciafido@gmail.com',
@@ -16,7 +19,7 @@ setup(
     url='https://github.com/garciafido/cima-goes-aio',
     packages=find_namespace_packages(where='src'),
     include_package_data=True,
-    python_requires='>=3.8',
+    python_requires='>=3.12',
     license='MIT',
     package_data={'': ['*.json', '*.cpt']},
     data_files = [("", ["LICENSE"])],

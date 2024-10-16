@@ -6,3 +6,4 @@ aiomultiprocess
 pyproj
 google-cloud-datastore
 google-cloud-storage
+cartopy

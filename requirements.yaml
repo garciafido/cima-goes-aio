@@ -1,0 +1,13 @@
+name: cima-goes-aio
+channels:
+  - conda-forge
+dependencies:
+  - pip: aiohttp
+  - conda: netCDF4
+  - pip: apsw
+  - conda: uvloop
+  - pip: aiomultiprocess
+  - conda: pyproj
+  - pip: google-cloud-datastore
+  - conda: google-cloud-storage
+  - conda: cartopy
